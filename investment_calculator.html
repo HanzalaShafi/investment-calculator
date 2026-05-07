@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0c0f;--surface:#111318;--s2:#1a1d24;--s3:#21252e;
+  --border:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.12);
+  --text:#e8eaf0;--muted:#6b7280;--accent:#00d4aa;
+  --a3:#f59e0b;--danger:#ef4444;--green:#22c55e;--orange:#fb923c;
+  --font-display:'Bebas Neue',sans-serif;
+  --font-num:'IBM Plex Mono',monospace;
+  --font-ui:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--text);min-height:100vh;padding:1.5rem;}
+
+/* header */
+.top-header{text-align:center;margin-bottom:1.5rem;}
+.top-lbl{font-family:var(--font-num);font-size:11px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;margin-bottom:.4rem;}
+.top-header h1{font-size:clamp(1.5rem,3.5vw,2.2rem);font-weight:300;letter-spacing:-.03em;}
+.top-header h1 span{font-weight:600;}
+
+/* tabs */
+.tab-nav{display:flex;gap:8px;justify-content:center;margin-bottom:2rem;flex-wrap:wrap;}
+.tab-btn{padding:9px 24px;border-radius:10px;border:.5px solid var(--b2);background:var(--surface);color:var(--muted);font-size:13px;font-family:var(--font-ui);cursor:pointer;transition:all .2s;letter-spacing:.02em;}
+.tab-btn:hover{border-color:var(--accent);color:var(--text);}
+.tab-btn.active{background:rgba(0,212,170,.1);border-color:var(--accent);color:var(--accent);font-weight:500;}
+.tab-content{display:none;}.tab-content.active{display:block;}
+
+/* shared */
+.panel{background:var(--surface);border:.5px solid var(--b2);border-radius:16px;padding:1.5rem;}
+.ptitle{font-size:11px;font-family:var(--font-num);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:1.5rem;}
+.divider{border:none;border-top:.5px solid var(--border);margin:1.5rem 0;}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--s3);border-radius:2px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);transition:transform .15s;}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);cursor:pointer;}
+
+/* calc layout */
+.calc-layout{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:360px 1fr;gap:1.5rem;align-items:start;}
+@media(max-width:820px){.calc-layout,.qqq-grid{grid-template-columns:1fr!important;}}
+.igroup{margin-bottom:1.4rem;}
+.irow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem;}
+.ilabel{font-size:13px;color:var(--muted);}
+.ival{font-family:var(--font-num);font-size:14px;font-weight:500;color:var(--text);background:var(--s2);border:.5px solid var(--b2);border-radius:6px;padding:3px 8px;width:110px;text-align:right;outline:none;transition:border-color .2s;}
+.ival:focus{border-color:var(--accent);}
+.sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1.5rem;}
+.sbtn{background:var(--s2);border:.5px solid var(--b2);border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;transition:all .2s;}
+.sbtn:hover{border-color:var(--accent);}
+.sbtn.active{background:rgba(0,212,170,.1);border-color:var(--accent);}
+.sbtn .sr{font-family:var(--font-num);font-size:15px;font-weight:500;color:var(--text);}
+.sbtn.active .sr{color:var(--accent);}
+.sbtn .sl{font-size:10px;color:var(--muted);margin-top:2px;}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.5rem;}
+.rcard{background:var(--s2);border:.5px solid var(--border);border-radius:10px;padding:12px 14px;}
+.rcard.hl{background:rgba(0,212,170,.08);border-color:rgba(0,212,170,.3);grid-column:1/-1;}
+.rlabel{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.rval{font-family:var(--font-num);font-size:20px;font-weight:500;}
+.rcard.hl .rval{font-size:28px;color:var(--accent);}
+.cmprow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border);}
+.cmprow:last-child{border-bottom:none;}
+.cmpname{font-size:12px;color:var(--muted);flex:0 0 130px;}
+.cmpbwrap{flex:1;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;}
+.cmpbar{height:100%;border-radius:3px;transition:width .5s ease;}
+.cmpamt{font-family:var(--font-num);font-size:12px;font-weight:500;flex:0 0 90px;text-align:right;}
+.atag{display:inline-block;font-size:10px;font-family:var(--font-num);padding:2px 7px;border-radius:4px;background:rgba(0,212,170,.15);color:var(--accent);margin-left:6px;}
+.mc{background:var(--s2);border:.5px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;transition:border-color .2s;}
+.mc.wdon{border-color:rgba(251,146,60,.5);}
+.mtop{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;gap:8px;flex-wrap:wrap;}
+.myr{font-family:var(--font-num);font-size:11px;color:var(--muted);flex:0 0 auto;}
+.mval{font-family:var(--font-num);font-size:14px;font-weight:500;}
+.mprofit{font-size:11px;font-family:var(--font-num);}
+.paybtn{display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 10px;border-radius:6px;border:.5px solid var(--b2);background:var(--s3);font-size:11px;color:var(--muted);transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.paybtn:hover{border-color:var(--orange);color:var(--orange);}
+.paybtn.on{background:rgba(251,146,60,.12);border-color:rgba(251,146,60,.5);color:var(--orange);}
+.pdot{width:6px;height:6px;border-radius:50%;background:var(--muted);transition:background .2s;}
+.paybtn.on .pdot{background:var(--orange);}
+.drawer{display:none;padding:0 14px 14px;border-top:.5px solid var(--border);}
+.drawer.open{display:block;}
+.dtop{display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;}
+.dlabel{font-size:12px;color:var(--muted);}
+.dpct{font-family:var(--font-num);font-size:14px;font-weight:500;color:var(--orange);}
+.prange{width:100%;height:4px;-webkit-appearance:none;background:var(--s3);border-radius:2px;outline:none;cursor:pointer;}
+.prange::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--orange);border:2px solid var(--bg);}
+.prange::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--orange);border:2px solid var(--bg);cursor:pointer;}
+.amts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.abox{background:var(--surface);border-radius:8px;padding:8px 10px;border:.5px solid var(--border);}
+.alabel{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.aval{font-family:var(--font-num);font-size:13px;font-weight:500;}
+.impact-note{margin-top:10px;font-size:11px;color:var(--muted);background:rgba(251,146,60,.06);padding:7px 10px;border-left:2px solid rgba(251,146,60,.35);}
+.chart-panel{background:var(--surface);border:.5px solid var(--b2);border-radius:16px;padding:1.5rem;}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;}
+.chart-title{font-size:11px;font-family:var(--font-num);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;}
+.legend{display:flex;gap:14px;flex-wrap:wrap;}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-family:var(--font-num);}
+.ld{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cwrap{position:relative;width:100%;height:300px;}
+
+/* ── QQQ Tracker ── */
+.qqq-layout{max-width:1100px;margin:0 auto;}
+.err-banner{background:rgba(239,68,68,.08);border:.5px solid rgba(239,68,68,.25);border-radius:10px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-bottom:1rem;display:none;}
+.price-header{background:var(--surface);border:.5px solid var(--b2);border-radius:16px;padding:1.5rem 2rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.2rem;}
+.ph-left{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;}
+.badge{background:var(--s2);border:.5px solid var(--b2);border-radius:8px;padding:8px 14px;text-align:center;}
+.badge-ticker{font-family:var(--font-display);font-size:22px;letter-spacing:.08em;color:var(--text);}
+.badge-name{font-size:10px;color:var(--muted);margin-top:1px;}
+.price-block{}
+/* Big price uses Bebas Neue */
+.big-price{font-family:var(--font-display);font-size:clamp(2.8rem,6vw,4.5rem);line-height:1;letter-spacing:.02em;transition:color .3s;}
+.big-price.pos{color:var(--green);}
+.big-price.neg{color:var(--danger);}
+@keyframes priceFlash{0%{opacity:1}40%{opacity:.2}100%{opacity:1}}
+.price-flash{animation:priceFlash .4s ease;}
+.price-change{font-family:var(--font-num);font-size:15px;font-weight:500;margin-top:4px;}
+.price-change.pos{color:var(--green);}
+.price-change.neg{color:var(--danger);}
+.ph-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+.live-pill{display:flex;align-items:center;gap:7px;font-family:var(--font-num);font-size:11px;padding:5px 14px;border-radius:20px;letter-spacing:.05em;}
+.live-pill.open{color:var(--green);background:rgba(34,197,94,.1);border:.5px solid rgba(34,197,94,.3);}
+.live-pill.closed{color:var(--muted);background:rgba(107,114,128,.08);border:.5px solid rgba(107,114,128,.25);}
+.ldot{width:7px;height:7px;border-radius:50%;}
+.live-pill.open .ldot{background:var(--green);animation:blink 1.4s ease-in-out infinite;}
+.live-pill.closed .ldot{background:var(--muted);}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.75)}}
+.upd-time{font-size:11px;color:var(--muted);font-family:var(--font-num);}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.5rem;}
+.stat-card{background:var(--surface);border:.5px solid var(--b2);border-radius:12px;padding:12px 14px;}
+.stat-lbl{font-size:10px;color:var(--muted);margin-bottom:5px;font-family:var(--font-num);letter-spacing:.06em;}
+.stat-val{font-family:var(--font-num);font-size:16px;font-weight:500;}
+.stat-val.pos{color:var(--green);}.stat-val.neg{color:var(--danger);}
+.range-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.rbtn{padding:5px 14px;border-radius:6px;border:.5px solid var(--b2);background:var(--s2);color:var(--muted);font-size:12px;font-family:var(--font-num);cursor:pointer;transition:all .15s;}
+.rbtn:hover{border-color:var(--accent);color:var(--text);}
+.rbtn.active{background:rgba(0,212,170,.1);border-color:var(--accent);color:var(--accent);}
+.rbtn:disabled{opacity:.4;cursor:not-allowed;}
+.qqq-cwrap{position:relative;width:100%;height:340px;}
+.qqq-grid{display:grid;grid-template-columns:340px 1fr;gap:1.5rem;margin-top:1.5rem;}
+.form-row{margin-bottom:1.2rem;}
+.flabel{font-size:12px;color:var(--muted);margin-bottom:6px;display:block;}
+.finput{width:100%;background:var(--s2);border:.5px solid var(--b2);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--font-num);font-size:14px;outline:none;transition:border-color .2s;}
+.finput:focus{border-color:var(--accent);}
+.finput[type=date]{color-scheme:dark;}
+.shares-hint{font-size:11px;color:var(--accent);margin-top:5px;font-family:var(--font-num);}
+.add-btn{width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#0a0c0f;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;font-family:var(--font-ui);margin-top:.5rem;letter-spacing:.02em;}
+.add-btn:hover{background:#00efbd;transform:translateY(-1px);}
+.add-btn.secondary{background:var(--s3);color:var(--accent);border:.5px solid var(--accent);}
+.add-btn.secondary:hover{background:rgba(0,212,170,.1);}
+.bwsec{margin-top:1.5rem;padding-top:1.5rem;border-top:.5px solid var(--border);}
+.port-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.5rem;}
+.pcrd{background:var(--s2);border:.5px solid var(--border);border-radius:10px;padding:12px 14px;}
+.pcrd.big{grid-column:1/-1;background:rgba(0,212,170,.06);border-color:rgba(0,212,170,.25);}
+.pcrd-lbl{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.pcrd-val{font-family:var(--font-num);font-size:18px;font-weight:500;}
+.pcrd.big .pcrd-val{font-size:26px;color:var(--accent);}
+.history-item{background:var(--s2);border:.5px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:8px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;}
+.history-item:hover{border-color:var(--b2);}
+.hi-date{font-family:var(--font-num);font-size:11px;color:var(--muted);}
+.hi-price{font-family:var(--font-num);font-size:13px;font-weight:500;}
+.hi-shares{font-size:11px;color:var(--muted);}
+.hi-val{font-family:var(--font-num);font-size:13px;font-weight:500;text-align:right;}
+.hi-gl{font-family:var(--font-num);font-size:11px;text-align:right;}
+.pos{color:var(--green);}.neg{color:var(--danger);}
+.del-btn{background:rgba(239,68,68,.1);border:.5px solid rgba(239,68,68,.2);border-radius:6px;padding:3px 8px;color:var(--danger);font-size:11px;cursor:pointer;transition:all .15s;margin-top:4px;}
+.del-btn:hover{background:rgba(239,68,68,.2);}
+.empty{text-align:center;padding:2rem;color:var(--muted);font-size:13px;line-height:1.6;}
+.chart-loading{text-align:center;padding:3rem;color:var(--muted);font-size:13px;font-family:var(--font-num);}
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <div class="top-lbl">Investment Tools</div>
+  <h1>Compound <span>Growth</span> + Live Tracker</h1>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('calc',this)">Growth Calculator</button>
+  <button class="tab-btn" onclick="switchTab('qqq',this)">Investments</button>
+</div>
+
+<!-- ═══════════ CALCULATOR TAB ═══════════ -->
+<div id="tab-calc" class="tab-content active">
+<div class="calc-layout">
+  <div>
+    <div class="panel">
+      <div class="ptitle">Parameters</div>
+      <div class="igroup">
+        <div class="irow"><span class="ilabel">Initial Investment</span><input class="ival" id="initVal" type="text" value="$10,000"></div>
+        <input type="range" id="initSlider" min="1000" max="200000" step="1000" value="10000">
+      </div>
+      <div class="igroup">
+        <div class="irow"><span class="ilabel">Bi-weekly Contribution</span><input class="ival" id="contribVal" type="text" value="$500"></div>
+        <input type="range" id="contribSlider" min="0" max="5000" step="50" value="500">
+      </div>
+      <div class="igroup">
+        <div class="irow"><span class="ilabel">Annual Return Rate</span><input class="ival" id="rateVal" type="text" value="15%"></div>
+        <input type="range" id="rateSlider" min="1" max="30" step="0.5" value="15">
+      </div>
+      <div class="igroup">
+        <div class="irow"><span class="ilabel">Time Horizon</span><input class="ival" id="yearsVal" type="text" value="20 yrs"></div>
+        <input type="range" id="yearsSlider" min="1" max="40" step="1" value="20">
+      </div>
+      <hr class="divider">
+      <div class="ptitle">Quick Scenarios</div>
+      <div class="sgrid">
+        <div class="sbtn" onclick="setScenario(4,this)"><div class="sr">4%</div><div class="sl">T-Bonds</div></div>
+        <div class="sbtn" onclick="setScenario(7,this)"><div class="sr">7%</div><div class="sl">Index Fund</div></div>
+        <div class="sbtn" onclick="setScenario(10,this)"><div class="sr">10%</div><div class="sl">S&P 500</div></div>
+        <div class="sbtn active" onclick="setScenario(15,this)"><div class="sr">15%</div><div class="sl">QQQ Avg</div></div>
+        <div class="sbtn" onclick="setScenario(18,this)"><div class="sr">18%</div><div class="sl">Bull Run</div></div>
+        <div class="sbtn" onclick="setScenario(25,this)"><div class="sr">25%</div><div class="sl">Aggressive</div></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:1.5rem;">
+      <div class="ptitle">Results</div>
+      <div class="rgrid">
+        <div class="rcard hl"><div class="rlabel">Final Portfolio Value</div><div class="rval" id="finalVal">$0</div></div>
+        <div class="rcard"><div class="rlabel">Total Contributed</div><div class="rval" id="totalInvested">$0</div></div>
+        <div class="rcard"><div class="rlabel">Net Profit</div><div class="rval" style="color:var(--green)" id="totalProfit">$0</div></div>
+        <div class="rcard"><div class="rlabel">Total Paid Out</div><div class="rval" style="color:var(--orange)" id="totalPaidOut">$0</div></div>
+      </div>
+      <div class="ptitle" style="margin-top:.5rem;">Year Milestones <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px;">— toggle to pay yourself</span></div>
+      <div id="milestones"></div>
+    </div>
+  </div>
+  <div>
+    <div class="chart-panel">
+      <div class="chart-header">
+        <div class="chart-title">Growth Over Time</div>
+        <div class="legend">
+          <div class="li"><div class="ld" style="background:#00d4aa"></div>With payouts</div>
+          <div class="li"><div class="ld" style="background:rgba(255,255,255,.25)"></div>No payouts</div>
+          <div class="li"><div class="ld" style="background:rgba(255,255,255,.1)"></div>Invested</div>
+        </div>
+      </div>
+      <div class="cwrap"><canvas id="growthChart"></canvas></div>
+    </div>
+    <div class="chart-panel" style="margin-top:1.5rem;">
+      <div class="ptitle">Strategy Comparison <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;">(same inputs, different rates)</span></div>
+      <div id="compareRows"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════ INVESTMENTS TAB ═══════════ -->
+<div id="tab-qqq" class="tab-content">
+<div class="qqq-layout">
+
+  <div id="errBanner" class="err-banner">Unable to fetch live data. Check connection or try again shortly.</div>
+
+  <div class="price-header">
+    <div class="ph-left">
+      <div class="badge">
+        <div class="badge-ticker">QQQ</div>
+        <div class="badge-name">Invesco Nasdaq 100</div>
+      </div>
+      <div class="price-block">
+        <div class="big-price" id="bigPrice">—</div>
+        <div class="price-change" id="priceChange">Loading...</div>
+      </div>
+    </div>
+    <div class="ph-right">
+      <div class="live-pill closed" id="livePill"><div class="ldot"></div><span id="mktStatus">LOADING</span></div>
+      <div class="upd-time" id="updTime">—</div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-lbl">OPEN</div><div class="stat-val" id="sOpen">—</div></div>
+    <div class="stat-card"><div class="stat-lbl">PREV CLOSE</div><div class="stat-val" id="sPrev">—</div></div>
+    <div class="stat-card"><div class="stat-lbl">DAY HIGH</div><div class="stat-val pos" id="sHigh">—</div></div>
+    <div class="stat-card"><div class="stat-lbl">DAY LOW</div><div class="stat-val neg" id="sLow">—</div></div>
+    <div class="stat-card"><div class="stat-lbl">52W HIGH</div><div class="stat-val" id="s52H">—</div></div>
+    <div class="stat-card"><div class="stat-lbl">52W LOW</div><div class="stat-val" id="s52L">—</div></div>
+  </div>
+
+  <div class="panel" style="margin-bottom:1.5rem;">
+    <div class="range-row" id="rangeRow">
+      <button class="rbtn" onclick="loadRange('1W',this)">1W</button>
+      <button class="rbtn" onclick="loadRange('1M',this)">1M</button>
+      <button class="rbtn" onclick="loadRange('3M',this)">3M</button>
+      <button class="rbtn" onclick="loadRange('6M',this)">6M</button>
+      <button class="rbtn active" onclick="loadRange('1Y',this)">1Y</button>
+      <button class="rbtn" onclick="loadRange('2Y',this)">2Y</button>
+      <button class="rbtn" onclick="loadRange('5Y',this)">5Y</button>
+    </div>
+    <div class="chart-loading" id="chartLoader">Connecting to market data...</div>
+    <div style="display:none" id="chartBox">
+      <div class="qqq-cwrap"><canvas id="qqqChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="qqq-grid">
+    <div class="panel">
+      <div class="ptitle">Add Buy Entry</div>
+      <div class="form-row">
+        <label class="flabel">Purchase Date</label>
+        <input class="finput" type="date" id="buyDate">
+      </div>
+      <div class="form-row">
+        <label class="flabel">Price Paid Per Share ($)</label>
+        <input class="finput" type="number" id="buyPrice" placeholder="Auto-fills with live price" step="0.01">
+        <div class="shares-hint" id="sharesHint">— shares</div>
+      </div>
+      <div class="form-row">
+        <label class="flabel">Dollar Amount Invested ($)</label>
+        <input class="finput" type="number" id="buyAmt" value="500" step="50">
+      </div>
+      <button class="add-btn" onclick="addBuy()">Add Buy Entry</button>
+
+      <div class="bwsec">
+        <div class="ptitle" style="margin-bottom:.8rem;">Bi-weekly Auto-Fill</div>
+        <div class="form-row">
+          <label class="flabel">Start Date of First Buy</label>
+          <input class="finput" type="date" id="bwStart">
+        </div>
+        <div class="form-row">
+          <label class="flabel">Amount Per Buy ($)</label>
+          <input class="finput" type="number" id="bwAmt" value="500">
+        </div>
+        <button class="add-btn secondary" onclick="addBiweekly()">Generate All Bi-weekly Buys</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">Adds every bi-weekly buy from your start date to today using real historical prices.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ptitle">Portfolio Summary</div>
+      <div class="port-cards">
+        <div class="pcrd big"><div class="pcrd-lbl">Current Portfolio Value</div><div class="pcrd-val" id="portVal">$0.00</div></div>
+        <div class="pcrd"><div class="pcrd-lbl">Total Invested</div><div class="pcrd-val" id="portInv">$0.00</div></div>
+        <div class="pcrd"><div class="pcrd-lbl">Total Gain / Loss</div><div class="pcrd-val" id="portGL">$0.00</div></div>
+        <div class="pcrd"><div class="pcrd-lbl">Return</div><div class="pcrd-val" id="portPct">0.00%</div></div>
+        <div class="pcrd"><div class="pcrd-lbl">Total Shares</div><div class="pcrd-val" id="portShares">0.0000</div></div>
+        <div class="pcrd"><div class="pcrd-lbl">Avg Buy Price</div><div class="pcrd-val" id="portAvg">$0.00</div></div>
+      </div>
+      <div class="ptitle">Buy History <span id="buyCnt" style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px;"></span></div>
+      <div id="buyHistory"><div class="empty">No buys logged yet.<br>Add your first entry above.</div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'qqq' && !qqqReady) initQQQ();
+}
+
+// ═══════════════════════════════════════
+// CALCULATOR
+// ═══════════════════════════════════════
+let calcChart, cSt = {init:10000,contrib:500,rate:15,years:20}, wdMap = {};
+const MS = [5,10,15,20,25,30,35,40];
+const F = n => '$' + Math.round(Math.max(0,n)).toLocaleString();
+const Fs = n => { n=Math.max(0,n); return n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e3?'$'+Math.round(n/1000)+'K':'$'+Math.round(n).toLocaleString(); };
+const getWD = y => wdMap[y]||{on:false,pct:4};
+
+function sim(useWD) {
+  const r=cSt.rate/100, ac=cSt.contrib*26; let p=cSt.init;
+  const pv=[p],iv=[cSt.init]; let out=0;
+  for(let y=1;y<=cSt.years;y++) {
+    p=p*(1+r)+ac;
+    if(useWD&&MS.includes(y)){const w=getWD(y);if(w.on){const t=p*(w.pct/100);p=Math.max(0,p-t);out+=t;}}
+    pv.push(p);iv.push(cSt.init+ac*y);
+  }
+  return {pv,iv,final:p,out};
+}
+
+function toggleWD(y){if(!wdMap[y])wdMap[y]={on:false,pct:4};wdMap[y].on=!wdMap[y].on;calcRefresh();}
+function setPct(y,p){if(!wdMap[y])wdMap[y]={on:true,pct:p};else wdMap[y].pct=p;calcRefresh();}
+
+function calcRefresh() {
+  const ac=cSt.contrib*26, wW=sim(true), nW=sim(false), inv=cSt.init+ac*cSt.years;
+  document.getElementById('finalVal').textContent=F(wW.final);
+  document.getElementById('totalInvested').textContent=F(inv);
+  const pr=wW.final+wW.out-inv;
+  document.getElementById('totalProfit').textContent=(pr>=0?'+':'')+F(pr);
+  document.getElementById('totalPaidOut').textContent=F(wW.out);
+  renderMS(wW,nW); renderCmp(); refreshCalcChart(wW,nW);
+}
+
+function renderMS(wW,nW){
+  const ac=cSt.contrib*26;
+  let yrs=[...MS.filter(y=>y<=cSt.years)];
+  if(!yrs.includes(cSt.years))yrs.push(cSt.years);
+  yrs.sort((a,b)=>a-b);
+  document.getElementById('milestones').innerHTML=yrs.map(y=>{
+    const val=wW.pv[y]||0,nv=nW.pv[y]||0,inv2=cSt.init+ac*y,pr=val-inv2;
+    const isMS=MS.includes(y),w=getWD(y),on=isMS&&w.on,pct=w.pct;
+    const taken=val*pct/100,stays=val-taken,impact=nv-wW.final;
+    return `<div class="mc ${on?'wdon':''}">
+      <div class="mtop">
+        <span class="myr">Year ${y}</span><span class="mval">${F(val)}</span>
+        <span class="mprofit" style="color:${pr>=0?'var(--green)':'var(--danger)'}">${pr>=0?'+':''}${Fs(pr)}</span>
+        ${isMS?`<div class="paybtn ${on?'on':''}" onclick="toggleWD(${y})"><div class="pdot"></div>Pay myself</div>`:''}
+      </div>
+      ${isMS?`<div class="drawer ${on?'open':''}" id="dr-${y}">
+        <div class="dtop"><span class="dlabel">Withdrawal %</span><span class="dpct" id="dp-${y}">${parseFloat(pct).toFixed(1)}%</span></div>
+        <input type="range" class="prange" min="1" max="25" step="0.5" value="${pct}"
+          oninput="setPct(${y},parseFloat(this.value));document.getElementById('dp-${y}').textContent=parseFloat(this.value).toFixed(1)+'%'">
+        <div class="amts">
+          <div class="abox"><div class="alabel">You take out</div><div class="aval" style="color:var(--orange)">${F(taken)}</div></div>
+          <div class="abox"><div class="alabel">Stays invested</div><div class="aval" style="color:var(--accent)">${F(stays)}</div></div>
+        </div>
+        ${on&&impact>1000?`<div class="impact-note">This reduces your year-${cSt.years} portfolio by ~${Fs(impact)}.</div>`:''}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderCmp(){
+  const ac=cSt.contrib*26;
+  const st=[{n:'Treasury Bonds',r:4,c:'#6b7280'},{n:'HY Savings',r:4.5,c:'#8b8fa8'},{n:'Index Portfolio',r:7,c:'#3b82f6'},{n:'REITs/Dividends',r:8,c:'#8b5cf6'},{n:'S&P 500',r:10,c:'#f59e0b'},{n:'QQQ (avg)',r:15,c:'#00d4aa'},{n:'Bull Run',r:18,c:'#22c55e'},{n:'Aggressive',r:25,c:'#ef4444'}];
+  const vals=st.map(s=>{const r=s.r/100;return cSt.init*Math.pow(1+r,cSt.years)+ac*((Math.pow(1+r,cSt.years)-1)/r);});
+  const mx=Math.max(...vals);
+  document.getElementById('compareRows').innerHTML=st.map((s,i)=>{
+    const p=Math.round(vals[i]/mx*100),act=Math.abs(s.r-cSt.rate)<.1;
+    return `<div class="cmprow"><span class="cmpname" style="color:${act?'var(--text)':''}">${s.n}${act?'<span class="atag">active</span>':''}</span>
+      <div class="cmpbwrap"><div class="cmpbar" style="width:${p}%;background:${s.c}"></div></div>
+      <span class="cmpamt" style="color:${act?s.c:''}">${Fs(vals[i])}</span></div>`;
+  }).join('');
+}
+
+function refreshCalcChart(wW,nW){
+  const labels=Array.from({length:cSt.years+1},(_,i)=>i===0?'Now':`Yr ${i}`);
+  if(calcChart){calcChart.data.labels=labels;calcChart.data.datasets[0].data=wW.pv;calcChart.data.datasets[1].data=nW.pv;calcChart.data.datasets[2].data=nW.iv;calcChart.update('none');}
+  else{calcChart=new Chart(document.getElementById('growthChart'),{type:'line',data:{labels,datasets:[
+    {label:'With payouts',data:wW.pv,borderColor:'#00d4aa',backgroundColor:'rgba(0,212,170,.07)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:5,borderWidth:2},
+    {label:'No payouts',data:nW.pv,borderColor:'rgba(255,255,255,.25)',fill:false,tension:.4,pointRadius:0,borderWidth:1.5,borderDash:[5,4]},
+    {label:'Invested',data:nW.iv,borderColor:'rgba(255,255,255,.1)',backgroundColor:'rgba(255,255,255,.02)',fill:true,tension:.1,pointRadius:0,borderWidth:1,borderDash:[2,4]}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1d24',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#6b7280',bodyColor:'#e8eaf0',callbacks:{label:c=>' '+c.dataset.label+': '+F(c.parsed.y)}}},
+    scales:{x:{ticks:{color:'#4b5563',font:{family:'IBM Plex Mono',size:10},maxTicksLimit:10},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.08)'}},
+      y:{ticks:{color:'#4b5563',font:{family:'IBM Plex Mono',size:10},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+(v/1000).toFixed(0)+'K'},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.08)'}}}}});}
+}
+
+function syncSlider(sid,tid){
+  const sl=document.getElementById(sid),tx=document.getElementById(tid);
+  const apply=v=>{
+    if(sid==='initSlider'){cSt.init=v;tx.value='$'+v.toLocaleString();}
+    if(sid==='contribSlider'){cSt.contrib=v;tx.value='$'+v.toLocaleString();}
+    if(sid==='rateSlider'){cSt.rate=v;tx.value=v+'%';document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));}
+    if(sid==='yearsSlider'){cSt.years=v;tx.value=v+' yrs';}
+    calcRefresh();
+  };
+  sl.addEventListener('input',()=>apply(parseFloat(sl.value)));
+  tx.addEventListener('change',()=>{const v=parseFloat(tx.value.replace(/[$,%a-z\s]/gi,''));if(!isNaN(v)){sl.value=v;apply(v);}});
+}
+function setScenario(r,el){cSt.rate=r;document.getElementById('rateSlider').value=r;document.getElementById('rateVal').value=r+'%';document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));el.classList.add('active');calcRefresh();}
+syncSlider('initSlider','initVal');syncSlider('contribSlider','contribVal');syncSlider('rateSlider','rateVal');syncSlider('yearsSlider','yearsVal');
+calcRefresh();
+
+// ═══════════════════════════════════════
+// QQQ LIVE TRACKER
+// ═══════════════════════════════════════
+let qqqReady=false, qqqChart=null, refreshTimer=null;
+let Q = { price:null, prevClose:null, ts:[], closes:[], range:'1Y', meta:{} };
+let buys=[], buyId=1;
+
+const RANGES = {
+  '1W':{r:'5d',  i:'1h' },
+  '1M':{r:'1mo', i:'1d' },
+  '3M':{r:'3mo', i:'1d' },
+  '6M':{r:'6mo', i:'1d' },
+  '1Y':{r:'1y',  i:'1d' },
+  '2Y':{r:'2y',  i:'1wk'},
+  '5Y':{r:'5y',  i:'1wk'},
+};
+
+const PROXIES = [
+  url => 'https://corsproxy.io/?' + url,
+  url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+  url => 'https://thingproxy.freeboard.io/fetch/' + url,
+];
+
+async function yfFetch(url) {
+  let lastErr;
+  for (const proxy of PROXIES) {
+    try {
+      const res = await fetch(proxy(url), {signal: AbortSignal.timeout(8000)});
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data?.chart?.result?.[0]) return data.chart.result[0];
+    } catch(e) { lastErr=e; }
+  }
+  throw lastErr || new Error('All proxies failed');
+}
+
+function isMarketOpen() {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const h=et.getHours(),m=et.getMinutes(),d=et.getDay();
+  return d>=1&&d<=5&&(h>9||(h===9&&m>=30))&&h<16;
+}
+
+function getRefreshMs() { return isMarketOpen() ? 10000 : 45000; }
+
+function scheduleRefresh() {
+  if (refreshTimer) clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(async () => {
+    await refreshPrice();
+    scheduleRefresh();
+  }, getRefreshMs());
+}
+
+async function refreshPrice() {
+  try {
+    const url=`https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=1d&range=1d&includePrePost=false`;
+    const r = await yfFetch(url);
+    updatePriceUI(r.meta);
+    document.getElementById('errBanner').style.display='none';
+  } catch(e) {
+    document.getElementById('errBanner').style.display='block';
+  }
+}
+
+function p2(n) { return n!=null?n.toFixed(2):'—'; }
+function pFmt(n) { return n!=null?'$'+n.toFixed(2):'—'; }
+
+let lastPrice = null;
+function updatePriceUI(meta) {
+  if(!meta) return;
+  const price = meta.regularMarketPrice;
+  const prev  = meta.chartPreviousClose||meta.regularMarketPreviousClose||meta.previousClose;
+  Q.price=price; Q.prevClose=prev; Q.meta=meta;
+
+  const el=document.getElementById('bigPrice');
+  const chg=price-prev, pct=(chg/prev)*100, pos=chg>=0;
+
+  // flash animation on price change
+  if(lastPrice!==null && lastPrice!==price) {
+    el.classList.remove('price-flash');
+    void el.offsetWidth; // reflow
+    el.classList.add('price-flash');
+  }
+  lastPrice=price;
+
+  el.textContent='$'+price.toFixed(2);
+  el.className='big-price '+(pos?'pos':'neg');
+  const changeEl=document.getElementById('priceChange');
+  changeEl.textContent=`${pos?'+':''}$${Math.abs(chg).toFixed(2)}  (${pos?'+':''}${pct.toFixed(2)}%)`;
+  changeEl.className='price-change '+(pos?'pos':'neg');
+
+  document.getElementById('sOpen').textContent=pFmt(meta.regularMarketOpen);
+  document.getElementById('sPrev').textContent=pFmt(prev);
+  document.getElementById('sHigh').textContent=pFmt(meta.regularMarketDayHigh);
+  document.getElementById('sLow').textContent=pFmt(meta.regularMarketDayLow);
+  document.getElementById('s52H').textContent=pFmt(meta.fiftyTwoWeekHigh);
+  document.getElementById('s52L').textContent=pFmt(meta.fiftyTwoWeekLow);
+
+  const open=isMarketOpen();
+  const pill=document.getElementById('livePill');
+  document.getElementById('mktStatus').textContent=open?'MARKET OPEN':'MARKET CLOSED';
+  pill.className='live-pill '+(open?'open':'closed');
+  document.getElementById('updTime').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'});
+
+  // auto-fill price input
+  const bp=document.getElementById('buyPrice');
+  if(!bp.dataset.touched) { bp.value=price.toFixed(2); updateShareHint(); }
+
+  updatePortSummary();
+  if(qqqChart) refreshBuyMarkers();
+}
+
+function fmtLabel(ts, rng) {
+  const d=new Date(ts*1000);
+  if(rng==='1W') return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'  '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  if(rng==='1M'||rng==='3M') return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});
+}
+
+function buildQQQChart(ts, closes, rng) {
+  // filter nulls
+  const valid=ts.map((t,i)=>({t,c:closes[i]})).filter(x=>x.c!=null&&!isNaN(x.c));
+  if(!valid.length) { document.getElementById('chartLoader').textContent='No data for this range.'; return; }
+
+  Q.ts=valid.map(x=>x.t);
+  Q.closes=valid.map(x=>x.c);
+  const labels=valid.map(x=>fmtLabel(x.t,rng));
+  const prices=valid.map(x=>x.c);
+  const isUp=prices[prices.length-1]>=prices[0];
+  const lc=isUp?'#22c55e':'#ef4444';
+  const fc=isUp?'rgba(34,197,94,.07)':'rgba(239,68,68,.07)';
+
+  document.getElementById('chartLoader').style.display='none';
+  document.getElementById('chartBox').style.display='block';
+
+  const scatterData=buildBuyScatter();
+
+  const chartOpts = {
+    responsive:true,maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1d24',borderColor:'rgba(255,255,255,.12)',borderWidth:1,titleColor:'#9ca3af',bodyColor:'#e8eaf0',
+      callbacks:{label:ctx=>{
+        if(ctx.dataset.label==='Buys'&&ctx.raw!=null){
+          const b=buys.find(x=>Math.abs(x.price-ctx.raw)<.5);
+          return b?` Bought $${b.amount} @ $${b.price.toFixed(2)}`:'';
+        }
+        return ` QQQ: $${ctx.parsed.y.toFixed(2)}`;
+      }}}},
+    scales:{
+      x:{ticks:{color:'#4b5563',font:{family:'IBM Plex Mono',size:10},maxTicksLimit:9,maxRotation:0},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.08)'}},
+      y:{ticks:{color:'#4b5563',font:{family:'IBM Plex Mono',size:10},callback:v=>'$'+v.toFixed(0)},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.08)'}}
+    }
+  };
+
+  if(qqqChart){
+    qqqChart.data.labels=labels;
+    qqqChart.data.datasets[0].data=prices;
+    qqqChart.data.datasets[0].borderColor=lc;
+    qqqChart.data.datasets[0].backgroundColor=fc;
+    qqqChart.data.datasets[1].data=scatterData;
+    qqqChart.options=chartOpts;
+    qqqChart.update('none');
+  } else {
+    qqqChart=new Chart(document.getElementById('qqqChart'),{type:'line',
+      data:{labels,datasets:[
+        {label:'Price',data:prices,borderColor:lc,backgroundColor:fc,fill:true,tension:.25,pointRadius:0,pointHoverRadius:4,borderWidth:2},
+        {label:'Buys',data:scatterData,type:'scatter',backgroundColor:'#f59e0b',borderColor:'#0a0c0f',borderWidth:2,pointRadius:8,pointHoverRadius:11,showLine:false}
+      ]},options:chartOpts});
+  }
+}
+
+function buildBuyScatter() {
+  if(!buys.length||!Q.ts.length) return Array(Q.closes.length).fill(null);
+  const out=Array(Q.closes.length).fill(null);
+  buys.forEach(b=>{
+    const tgt=b.timestamp/1000;
+    let best=0,bestD=Infinity;
+    Q.ts.forEach((t,i)=>{const d=Math.abs(t-tgt);if(d<bestD){bestD=d;best=i;}});
+    if(bestD<86400*7) out[best]=b.price;
+  });
+  return out;
+}
+
+function refreshBuyMarkers(){
+  if(!qqqChart) return;
+  qqqChart.data.datasets[1].data=buildBuyScatter();
+  qqqChart.update('none');
+}
+
+async function loadRange(rng, el) {
+  document.querySelectorAll('.rbtn').forEach(b=>{b.classList.remove('active');b.disabled=true;});
+  el.classList.add('active');
+  Q.range=rng;
+  document.getElementById('chartLoader').style.display='block';
+  document.getElementById('chartLoader').textContent='Loading '+rng+' data...';
+  document.getElementById('chartBox').style.display='none';
+  const {r,i}=RANGES[rng];
+  try {
+    const url=`https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=${i}&range=${r}&includePrePost=false`;
+    const result=await yfFetch(url);
+    updatePriceUI(result.meta);
+    buildQQQChart(result.timestamp, result.indicators.quote[0].close, rng);
+    document.getElementById('errBanner').style.display='none';
+  } catch(e) {
+    document.getElementById('errBanner').style.display='block';
+    document.getElementById('chartLoader').textContent='Failed to load '+rng+'. Retry by clicking the button again.';
+  } finally {
+    document.querySelectorAll('.rbtn').forEach(b=>b.disabled=false);
+  }
+}
+
+async function initQQQ() {
+  qqqReady=true;
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('buyDate').value=today;
+  document.getElementById('bwStart').value=today;
+  document.getElementById('buyPrice').addEventListener('input',()=>{
+    document.getElementById('buyPrice').dataset.touched='1';
+    updateShareHint();
+  });
+  document.getElementById('buyAmt').addEventListener('input',updateShareHint);
+  await loadRange('1Y',document.querySelector('.rbtn[onclick*="1Y"]'));
+  scheduleRefresh();
+}
+
+function updateShareHint(){
+  const p=parseFloat(document.getElementById('buyPrice').value);
+  const a=parseFloat(document.getElementById('buyAmt').value);
+  document.getElementById('sharesHint').textContent=(!isNaN(p)&&p>0&&!isNaN(a)&&a>0)?'= '+(a/p).toFixed(4)+' shares':'— shares';
+}
+
+function addBuy(){
+  const date=document.getElementById('buyDate').value;
+  const price=parseFloat(document.getElementById('buyPrice').value);
+  const amt=parseFloat(document.getElementById('buyAmt').value);
+  if(!date||isNaN(price)||price<=0||isNaN(amt)||amt<=0){alert('Please fill in a valid date, price, and amount.');return;}
+  buys.push({id:buyId++,date,price,amount:amt,shares:amt/price,timestamp:new Date(date+'T12:00:00').getTime()});
+  buys.sort((a,b)=>a.timestamp-b.timestamp);
+  renderHistory(); updatePortSummary(); refreshBuyMarkers();
+  document.getElementById('buyPrice').dataset.touched='';
+  if(Q.price) document.getElementById('buyPrice').value=Q.price.toFixed(2);
+  updateShareHint();
+}
+
+async function addBiweekly(){
+  const start=document.getElementById('bwStart').value;
+  const amt=parseFloat(document.getElementById('bwAmt').value);
+  if(!start||isNaN(amt)||amt<=0){alert('Enter a valid start date and amount.');return;}
+  const sd=new Date(start+'T12:00:00'), today=new Date();
+  if(sd>today){alert('Start date must be in the past.');return;}
+
+  let hTS=Q.ts, hC=Q.closes;
+  if(hTS.length<100){
+    try {
+      const r=await yfFetch('https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=1wk&range=5y&includePrePost=false');
+      hTS=r.timestamp;
+      hC=r.indicators.quote[0].close;
+    } catch(e){alert('Could not load historical data for auto-fill.');return;}
+  }
+
+  const dates=[];
+  let cur=new Date(sd);
+  while(cur<=today){dates.push(new Date(cur));cur.setDate(cur.getDate()+14);}
+
+  let added=0;
+  dates.forEach(d=>{
+    const tgt=d.getTime()/1000;
+    let bi=0,bd=Infinity;
+    hTS.forEach((t,i)=>{if(hC[i]==null)return;const diff=Math.abs(t-tgt);if(diff<bd){bd=diff;bi=i;}});
+    if(!hC[bi]||bd>86400*5) return;
+    const ds=d.toISOString().split('T')[0];
+    if(buys.find(b=>b.date===ds&&Math.abs(b.amount-amt)<1)) return;
+    buys.push({id:buyId++,date:ds,price:hC[bi],amount:amt,shares:amt/hC[bi],timestamp:d.getTime()});
+    added++;
+  });
+
+  if(!added){alert('No new entries to add.');return;}
+  buys.sort((a,b)=>a.timestamp-b.timestamp);
+  renderHistory(); updatePortSummary(); refreshBuyMarkers();
+  alert(`Added ${added} bi-weekly entries.`);
+}
+
+function deleteBuy(id){
+  buys=buys.filter(b=>b.id!==id);
+  renderHistory(); updatePortSummary(); refreshBuyMarkers();
+}
+
+function renderHistory(){
+  const el=document.getElementById('buyHistory');
+  document.getElementById('buyCnt').textContent=buys.length?`(${buys.length} entries)`:'';
+  if(!buys.length){el.innerHTML='<div class="empty">No buys logged yet.<br>Add your first entry above.</div>';return;}
+  const cp=Q.price;
+  el.innerHTML=[...buys].reverse().map(b=>{
+    const cv=cp?b.shares*cp:null;
+    const gl=cv!=null?cv-b.amount:null;
+    const glp=gl!=null?(gl/b.amount)*100:null;
+    return `<div class="history-item">
+      <div><div class="hi-date">${b.date}</div><button class="del-btn" onclick="deleteBuy(${b.id})">x</button></div>
+      <div><div class="hi-price">@ $${b.price.toFixed(2)}</div><div class="hi-shares">${b.shares.toFixed(4)} shares · $${b.amount.toFixed(0)}</div></div>
+      <div><div class="hi-val">${cv!=null?'$'+cv.toFixed(2):'—'}</div>
+        <div class="hi-gl ${gl!=null?(gl>=0?'pos':'neg'):''}">${gl!=null?(gl>=0?'+':'')+gl.toFixed(2)+' ('+glp.toFixed(1)+'%)':'—'}</div></div>
+    </div>`;
+  }).join('');
+}
+
+function updatePortSummary(){
+  if(!buys.length){
+    ['portVal','portInv','portGL','portPct','portShares','portAvg'].forEach(id=>{document.getElementById(id).textContent='$0.00';document.getElementById(id).style.color='';});
+    document.getElementById('portShares').textContent='0.0000';
+    document.getElementById('portPct').textContent='0.00%';
+    return;
+  }
+  const cp=Q.price;
+  const tot=buys.reduce((s,b)=>s+b.shares,0);
+  const inv=buys.reduce((s,b)=>s+b.amount,0);
+  const val=cp?tot*cp:null;
+  const gl=val!=null?val-inv:null;
+  const glp=gl!=null?(gl/inv)*100:null;
+  const avg=inv/tot;
+
+  document.getElementById('portVal').textContent=val!=null?'$'+val.toFixed(2):'—';
+  document.getElementById('portInv').textContent='$'+inv.toFixed(2);
+  document.getElementById('portShares').textContent=tot.toFixed(4);
+  document.getElementById('portAvg').textContent='$'+avg.toFixed(2);
+
+  const glEl=document.getElementById('portGL');
+  glEl.textContent=gl!=null?(gl>=0?'+ ':'- ')+'$'+Math.abs(gl).toFixed(2):'—';
+  glEl.style.color=gl!=null?(gl>=0?'var(--green)':'var(--danger)'):'';
+
+  const pEl=document.getElementById('portPct');
+  pEl.textContent=glp!=null?(glp>=0?'+':'')+glp.toFixed(2)+'%':'—';
+  pEl.style.color=glp!=null?(glp>=0?'var(--green)':'var(--danger)'):'';
+}
+</script>
+</body>
+</html>
